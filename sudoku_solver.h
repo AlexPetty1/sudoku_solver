@@ -16,12 +16,14 @@ struct tile{
                                 // -1 if no number decided yet
     int xCor;
     int yCor;
+    int testedForPair;
+
 };
 
 struct row{
-    int numsInRow[10];       // acts as a map
-                            // 0 number is not in box
-                            // 1 number is in box
+    int potentialNumsInRow[10];       // acts as a map
+                                    // 0 number is in row
+                                    // 1 - 9 number of tiles that can have that number
     int rowNum;                 
     int isColumn;
 };
@@ -29,7 +31,10 @@ struct row{
 struct box{
     int xCor;
     int yCor;
-    int numsInBox[10];           // acts as a map, 0 number is not in box, 1 number is in box
+    int potentialNumsInBox[10];           // acts as a map
+                                // 0 number is in box
+                                // 1 - 9 number of tiles that can have that number
+    int pointerChecked[10]; 
 };
 
 
@@ -38,7 +43,7 @@ struct board{
     struct box*** boxArray;
     struct row** rowArray;
     struct row** colArray;
-
+    struct selector selector;
 };
 
 struct tile* makeTile(int x, int y);
@@ -53,11 +58,17 @@ void freeTileArray(struct tile*** tileArray, int rowLength);
 void freeBoxArray(struct box*** boxArray, int boxLength);
 void freeRowArray(struct row** rowArray, int rowLength);
 
-void updateRow(struct tile*** tileArray, struct row* rowArray, int numberAddedToRow);
-void updateBox(struct tile*** tileArray, struct box* boxArray, int numberAddedToBox);
+void updateRow(struct board* board, struct row* rowArray, int numberAddedToRow);
+void updateBox(struct board* board, struct box* boxArray, int numberAddedToBox);
+void updateBoxIgnoretiles(struct board* board, struct box* box, int numberAddedToBox, int tilesIgnored[10]);
+void updateRowIgnoreTiles(struct board* board, struct row* row, int numberAddedToRow, int tilesIgnored[9]);
 
-void checkRow(struct board* board, struct row* row);
-void checkBox(struct board* board, struct box* box);
+int checkRow(struct board* board, struct row* row);
+
+int checkBox(struct board* board, struct box* box);
+
+int checkBoxForPairs(struct board* board, struct box* box, struct tile* knownDouble);
+int checkBoxForPointers(struct board* board, struct box* box, int numberDecreased);
 
 void printBoard(struct tile*** tileArray, struct selector* boardSelector);
 

@@ -64,8 +64,12 @@ void updateBoxIgnoretiles(struct board* board, struct box* box, int numberAddedT
 void updateRowIgnoreTiles(struct board* board, struct row* row, int numberAddedToRow, int tilesIgnored[9]);
 
 int checkRow(struct board* board, struct row* row);
-
 int checkBox(struct board* board, struct box* box);
+
+int checkRowsForOnePotentialNumber(struct board* board, int number);
+int checkBoxesForOnePotentialNumber(struct board* board, int number);
+int checkAllPotentialNumberInBox(struct board* board, struct box* box);
+int checkAllPotentialNumbersInRow(struct board* board, struct row* row);
 
 int checkBoxForPairs(struct board* board, struct box* box, struct tile* knownDouble);
 int checkBoxForPointers(struct board* board, struct box* box, int numberDecreased);

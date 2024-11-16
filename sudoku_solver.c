@@ -139,10 +139,6 @@ void updateRow(struct board* board, struct row* row, int numberAddedToRow){
         if(tileOn->potentialNums[numberAddedToRow] == 1){
             tileOn->potentialNums[numberAddedToRow] = 0;
             tileOn->numberOfPotentialNums = tileOn->numberOfPotentialNums - 1;
-            // if(tileOn->numberOfPotentialNums == 2){
-            //     struct box* boxOn = getBoxFromCords(board->boxArray, tileOn->xCor, tileOn->yCor);
-            //     checkBoxForPairs(board, boxOn, tileOn);
-            // }
 
             //updates box and other row of tile
             struct box* box = getBoxFromCords(board->boxArray, tileOn->xCor, tileOn->yCor);
@@ -153,13 +149,6 @@ void updateRow(struct board* board, struct row* row, int numberAddedToRow){
             if(box->potentialNumsInBox[numberAddedToRow] != 0){
                 box->potentialNumsInBox[numberAddedToRow]--;
             }
-
-            // struct box* boxTileIn = getBoxFromCords(board->boxArray, tileOn->xCor, tileOn->yCor); 
-            // // checks for pointers
-            // if(box->potentialNumsInBox[numberAddedToRow] == 2){
-            //     checkBoxForPointers(board, boxTileIn, numberAddedToRow);
-            // }
-
         }
     }
 
@@ -191,11 +180,6 @@ void updateRowIgnoreTiles(struct board* board, struct row* row, int numberAddedT
             tileOn->numberOfPotentialNums = tileOn->numberOfPotentialNums - 1;
             row->potentialNumsInRow[numberAddedToRow] = row->potentialNumsInRow[numberAddedToRow] - 1;
 
-            // if(tileOn->numberOfPotentialNums == 2){
-            //     struct box* box = getBoxFromCords(board->boxArray, tileOn->xCor, tileOn->yCor);
-            //     checkBoxForPairs(board, box, tileOn);
-            // }
-
             //updates box and other row of tile
             struct box* box = getBoxFromCords(board->boxArray, tileOn->xCor, tileOn->yCor);
             if(otherRow->potentialNumsInRow[numberAddedToRow] != 0){
@@ -205,13 +189,6 @@ void updateRowIgnoreTiles(struct board* board, struct row* row, int numberAddedT
             if(box->potentialNumsInBox[numberAddedToRow] != 0){
                 box->potentialNumsInBox[numberAddedToRow]--;
             }
-
-            // checks for pointers
-            // struct box* boxTileIn = getBoxFromCords(board->boxArray, tileOn->xCor, tileOn->yCor);
-            // if(box->potentialNumsInBox[numberAddedToRow] == 2){
-            //     checkBoxForPointers(board, boxTileIn, numberAddedToRow);
-            // }
-
         }
     }
 
@@ -288,11 +265,6 @@ void updateBoxIgnoretiles(struct board* board, struct box* box, int numberAddedT
                 tileOn->numberOfPotentialNums = tileOn->numberOfPotentialNums - 1;
 
                 box->potentialNumsInBox[numberAddedToBox] = box->potentialNumsInBox[numberAddedToBox] - 1;
-
-                // if(tileOn->numberOfPotentialNums == 2){
-                //     struct box* box = getBoxFromCords(board->boxArray, tileOn->xCor, tileOn->yCor);
-                //     checkBoxForPairs(board, box, tileOn);
-                // }
 
                 if(tileRow->potentialNumsInRow[numberAddedToBox] != 0){
                     tileRow->potentialNumsInRow[numberAddedToBox]--;

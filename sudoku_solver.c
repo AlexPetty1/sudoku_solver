@@ -526,9 +526,29 @@ int checkBox(struct board* board, struct box* box){
 }
 
 
-int checkAllPotentialNumbersInRow(struct board* board, struct row* row){
+int checkRowsForHiddenSingles(struct board* board){
+    struct row** rowArray = board->rowArray;
+    struct row** colArray = board->colArray;
+
     int hasUpdates = 0;
+    for(int rowNum = 0; rowNum < 9; rowNum++){
+        struct row* row = rowArray[rowNum];
+        hasUpdates += checkRowForHiddenSingle(board, row);
+    }
+
+    for(int colNum = 0; colNum < 9; colNum++){
+        struct row* col = colArray[colNum];
+        hasUpdates += checkRowForHiddenSingle(board, col);
+    }
+
+    return hasUpdates;
+}
+
+
+
+int checkRowForHiddenSingle(struct board* board, struct row* row){
     struct tile*** tileArray = board->tileArray;
+    int hasUpdates = 0;
     for(int number = 1; number < 10; number++){
         if(row->potentialNumsInRow[number] != 1){
             continue;
@@ -547,25 +567,40 @@ int checkAllPotentialNumbersInRow(struct board* board, struct row* row){
                 hasUpdates = 1;
             }
         }
+
     }
+
     return hasUpdates;
 }
 
 
-int checkAllPotentialNumberInBox(struct board* board, struct box* box){
-    struct tile*** tileArray = board->tileArray;
+int checkBoxesForHiddenSingles(struct board* board){
     int hasUpdates = 0;
-    int startX = box->xCor * 3;
-    int startY = box->yCor * 3;
+    for(int y = 0; y < 3; y++){
+        for(int x = 0; x < 3; x++){
+            struct box* boxOn = board->boxArray[y][x];
+            hasUpdates += checkBoxForHiddenSingle(board, boxOn);
+        }
+    }
 
+    return hasUpdates;
+}
+
+
+int checkBoxForHiddenSingle(struct board* board, struct box* box){
+    struct tile*** tileArray = board->tileArray;
+
+    int hasUpdates = 0;
     for(int number = 1; number < 10; number++){
-
         if(box->potentialNumsInBox[number] != 1){
             continue;
         }
 
-        for(int tileY = startY; tileY <startY + 3; tileY++){
-            for(int tileX = startX; tileX < startX + 3; tileX++){
+        int startTileX = box->xCor * 3;
+        int startTileY = box->yCor * 3;
+
+        for(int tileY = startTileY; tileY < startTileY + 3; tileY++){
+            for(int tileX = startTileX; tileX < startTileX + 3; tileX++){
                 struct tile* tileOn = tileArray[tileY][tileX];
 
                 if(tileOn->potentialNums[number] == 1){
@@ -575,82 +610,9 @@ int checkAllPotentialNumberInBox(struct board* board, struct box* box){
             }
         }
     }
-    return hasUpdates;
-}
-
-
-int checkRowsForOnePotentialNumber(struct board* board, int number){
-    struct row** rowArray = board->rowArray;
-    struct row** colArray = board->colArray;
-    struct tile*** tileArray = board->tileArray;
-    int hasUpdates = 0;
-
-    for(int rowNum = 0; rowNum < 9; rowNum++){
-        struct row* rowOn = rowArray[rowNum];
-        if(rowOn->potentialNumsInRow[number] != 1){
-            continue;
-        }
-
-        for(int i = 0; i < 9; i++){
-            struct tile* tileOn = tileArray[rowNum][i];
-
-            if(tileOn->potentialNums[number] == 1){
-                setTile(tileOn->xCor, tileOn->yCor, number, board);
-                hasUpdates = 1;
-            }
-        }
-    }
-
-    for(int colNum = 0; colNum < 9; colNum++){
-
-        struct row* colOn = colArray[colNum];
-
-        if(colOn->potentialNumsInRow[number] != 1){
-            continue;
-        }
-
-        for(int i = 0; i < 9; i++){
-            struct tile* tileOn = tileArray[i][colNum];
-
-            if(tileOn->potentialNums[number] == 1){
-                setTile(tileOn->xCor, tileOn->yCor, number, board);
-                hasUpdates = 1;
-            }
-        }
-    }
 
     return hasUpdates;
 }
-
-int checkBoxesForOnePotentialNumber(struct board* board, int number){
-    struct box*** boxArray = board->boxArray;
-    struct tile*** tileArray = board->tileArray;
-    int hasUpdates = 0;
-
-    for(int y = 0; y < 2; y++){
-        for(int x = 0; x < 2; x++){
-
-            struct box* boxOn = boxArray[y][x];
-            if(boxOn->potentialNumsInBox[number] != 1){
-                continue;
-            }
-
-            for(int tileY = y * 3; tileY < (y + 1) * 3; tileY++){
-                for(int tileX = x * 3; tileX < (x+1) * 3; tileX++){
-                    struct tile* tileOn = tileArray[tileY][tileX];
-
-                    if(tileOn->potentialNums[number] == 1){
-                        setTile(tileOn->xCor, tileOn->yCor, number, board);
-                        hasUpdates = 1;
-                    }
-                }
-            }
-        }
-    }
-
-    return hasUpdates;
-}
-
 
 
 // Function: setTile
@@ -717,11 +679,9 @@ int setTile(int x, int y, int number, struct board* board){
         hasUpdates += checkRow(board, col);
         hasUpdates += checkBox(board, box);
 
-        hasUpdates += checkBoxesForOnePotentialNumber(board, number);
-        hasUpdates += checkRowsForOnePotentialNumber(board, number);
-        hasUpdates += checkAllPotentialNumbersInRow(board, row);
-        hasUpdates += checkAllPotentialNumbersInRow(board, col);
-        hasUpdates += checkAllPotentialNumberInBox(board, box);
+        hasUpdates += checkBoxesForHiddenSingles(board);
+        hasUpdates += checkRowsForHiddenSingles(board);
+
         hasUpdates += checkBoxesForPointers(board);
         hasUpdates += checkTilesForPairs(board);
     } while(hasUpdates >  0);
@@ -878,7 +838,6 @@ int main(){
             isValid = setTile(boardSelector.x, boardSelector.y, inputAscii, &board);
         } 
 
-        printf("Tile: 2, 0: %d\n", tileArray[0][2]->numberOfPotentialNums);
         printBoard(tileArray, &boardSelector);
 
         if(isValid == -1){

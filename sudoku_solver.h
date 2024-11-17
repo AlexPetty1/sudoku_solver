@@ -71,6 +71,12 @@ int checkBoxesForOnePotentialNumber(struct board* board, int number);
 int checkAllPotentialNumberInBox(struct board* board, struct box* box);
 int checkAllPotentialNumbersInRow(struct board* board, struct row* row);
 
+int checkRowsForHiddenSingles(struct board* board);
+int checkRowForHiddenSingle(struct board* board, struct row* row);
+int checkBoxesForHiddenSingles(struct board* board);
+int checkBoxForHiddenSingle(struct board* board, struct box* box);
+
+
 int checkBoxForPairs(struct board* board, struct box* box, struct tile* knownDouble);
 int checkBoxForPointers(struct board* board, struct box* box, int numberDecreased);
 

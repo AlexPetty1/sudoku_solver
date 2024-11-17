@@ -26,6 +26,7 @@ struct row{
                                     // 1 - 9 number of tiles that can have that number
     int rowNum;                 
     int isColumn;
+    int hiddenPairChecked[10]; 
 };
 
 struct box{
@@ -34,7 +35,9 @@ struct box{
     int potentialNumsInBox[10];           // acts as a map
                                 // 0 number is in box
                                 // 1 - 9 number of tiles that can have that number
-    int pointerChecked[10]; 
+    int doublePointerChecked[10]; 
+    int triplePointerChecked[10]; 
+    int hiddenPairChecked[10]; 
 };
 
 
@@ -66,19 +69,23 @@ void updateRowIgnoreTiles(struct board* board, struct row* row, int numberAddedT
 int checkRow(struct board* board, struct row* row);
 int checkBox(struct board* board, struct box* box);
 
-int checkRowsForOnePotentialNumber(struct board* board, int number);
-int checkBoxesForOnePotentialNumber(struct board* board, int number);
-int checkAllPotentialNumberInBox(struct board* board, struct box* box);
-int checkAllPotentialNumbersInRow(struct board* board, struct row* row);
-
 int checkRowsForHiddenSingles(struct board* board);
 int checkRowForHiddenSingle(struct board* board, struct row* row);
 int checkBoxesForHiddenSingles(struct board* board);
 int checkBoxForHiddenSingle(struct board* board, struct box* box);
 
-
+int checkTilesForPairs(struct board* board);
 int checkBoxForPairs(struct board* board, struct box* box, struct tile* knownDouble);
-int checkBoxForPointers(struct board* board, struct box* box, int numberDecreased);
+int checkBoxesForPointers(struct board* board);
+int checkBoxForDoublePointers(struct board* board, struct box* box, int numberDecreased);
+int checkBoxForTriplePointers(struct board* board, struct box* box, int numberDecreased);
+
+
+int checkRowForHiddenPair(struct board* board, struct row* row);
+int checkRowsForHiddenPairs(struct board* board);
+int checkBoxesForHiddenPairs(struct board* board);
+int checkBoxForHiddenPair(struct board* board, struct box* box);
+int updateTileHiddenPair(struct board* board, struct tile* tile, int num1, int num2);
 
 void printBoard(struct tile*** tileArray, struct selector* boardSelector);
 

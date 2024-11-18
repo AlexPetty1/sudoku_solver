@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/time.h>
 
 #include "sudoku_solver.h"
 
@@ -15,6 +16,7 @@ struct tile* makeTile(int x, int y){
     newTile->num = -1;
     newTile->numberOfPotentialNums = 9;
     newTile->testedForPair = 0;
+    newTile->setByNotBruteForce = 0;
 
     newTile->potentialNums[0] = 0;
     for(int i = 1; i < 10; i++){
@@ -772,7 +774,7 @@ int checkRowForHiddenPair(struct board* board, struct row* row){
             continue;
         }
         row->hiddenPairChecked[number] = 1;
-        
+
         struct tile* tile1 = NULL;
         struct tile* tile2 = NULL;
         
@@ -920,6 +922,7 @@ int setTile(int x, int y, int number, struct board* board){
     col->potentialNumsInRow[number] = 0;
     tile->num = number;
     tile->potentialNums[number] = 0;
+    tile->setByNotBruteForce = 1;
 
     //sets all numbers to be not available
     //updates each row & box to decrease the option
@@ -957,11 +960,12 @@ int setTile(int x, int y, int number, struct board* board){
 
         hasUpdates += checkBoxesForPointers(board);
         hasUpdates += checkTilesForPairs(board);
-
     } while(hasUpdates >  0);
 
     return 1;
 }
+
+
 
 // Function: getBoxFromCords
 // Description: returns the box associated with the tile on the grid
@@ -1022,6 +1026,170 @@ void printBoard(struct tile*** tileArray, struct selector* boardSelector){
         }
     }
 }
+
+
+//used in the brute force algorithm
+int isBoardValid(struct board* board){
+    struct tile*** tileArray = board->tileArray;
+
+    //checks rows
+    for(int i = 0; i < 9; i++){
+        int numsSeen[10] = {0};
+        for(int tileNum = 0; tileNum < 9; tileNum++){
+
+            struct tile* tileOn = tileArray[i][tileNum];
+            if(tileOn->num != -1){
+                
+                //number has already been seen in row so return invalid board
+                if(numsSeen[tileOn->num] == 1){
+                    return 0;
+                }
+
+                numsSeen[tileOn->num] = 1;
+            }
+        }
+    }
+
+    //checks cols
+    for(int i = 0; i < 9; i++){
+        int numsSeen[10] = {0};
+        for(int tileNum = 0; tileNum < 9; tileNum++){
+
+            struct tile* tileOn = tileArray[tileNum][i];
+            if(tileOn->num != -1){
+                
+                //number has already been seen in row so return invalid board
+                if(numsSeen[tileOn->num] == 1){
+                    return 0;
+                }
+
+                numsSeen[tileOn->num] = 1;
+            }
+        }
+    }
+
+    //checks boxes
+    for(int boxY = 0; boxY < 3; boxY++){
+        for(int boxX = 0; boxX < 3; boxX++){
+            
+            int numsSeen[10] = {0};
+            int tileXStart = boxX * 3;
+            int tileYStart = boxY * 3;
+
+
+            for(int tileY = tileYStart; tileY < tileYStart + 3; tileY++){
+                for(int tileX = tileXStart; tileX < tileXStart + 3; tileX++){
+
+                    struct tile* tileOn = tileArray[tileY][tileX];
+                    if(tileOn->num != -1){
+                        
+                        //number has already been seen in row so return invalid board
+                        if(numsSeen[tileOn->num] == 1){
+                            return 0;
+                        }
+
+                        numsSeen[tileOn->num] = 1;
+                    }
+                }
+            }
+        }   
+    }
+    return 1;
+}
+
+// return 1 for valid
+// return -1 for invalid backtrace
+// return 0 if already set
+int bruteForceOnTile(struct tile* tile, struct board* board, int direction){
+
+    if(tile->setByNotBruteForce == 1){
+        return 0;
+    }
+
+    if(isBoardValid(board) == 1 && 
+        tile->num != -1 && 
+        direction == 1){  // if direction going backwards must increase by 1 at least
+        return 1;
+    }
+
+    int numberTested;
+    if(tile->num == -1){
+        numberTested = 1;
+    } else {
+        numberTested = tile->num + 1;
+    }
+
+    while(numberTested < 10){
+        if(tile->potentialNums[numberTested] == 1){
+            tile->num = numberTested;
+
+            if(isBoardValid(board) == 1){
+                return 1;
+            }
+        }
+
+        numberTested++;
+    }
+    tile->num = -1;
+    return -1;
+}
+
+void bruteForceAlgorithm(struct board* board){
+    struct tile*** tileArray = board->tileArray;
+
+    int tileOnX = 0;
+    int tileOnY = 0;
+    int direction = 1;
+    int result = 0;
+    int index = 0;
+    while(1){
+        struct tile* tileOn = tileArray[tileOnY][tileOnX];
+        //on tile
+        result = bruteForceOnTile(tileOn, board, direction);
+        
+        switch (result){
+            case -1:
+                direction = -1;
+                tileOnX--;
+                break;
+            case 0:
+                if(direction == 1){
+                    tileOnX++;
+                } else {
+                    tileOnX--;
+                }
+                break;
+            case 1:
+                direction = 1;
+                tileOnX++;
+                break;
+
+        };
+
+        if(tileOnX == 9){
+            tileOnX = 0;
+            tileOnY++;
+        }
+
+        if(tileOnX == -1){
+            tileOnX = 8;
+            tileOnY--;
+        }
+
+        if(tileOnY == -1){
+            printf("Y became -1\n");
+            break;
+        }
+        
+
+        if(tileOnY == 9){
+            printf("Y became 9\n");
+            break;
+        }
+        index++;
+    }
+}
+
 
 
 
@@ -1102,14 +1270,31 @@ int main(){
             }
         } else if(in == 'q'){
             break;
+        } else if(in == 'b'){
+
+            struct timeval stop, start;
+            gettimeofday(&start, NULL);
+
+            bruteForceAlgorithm(&board);
+
+            gettimeofday(&stop, NULL);
+            printf("took %lu for brute force\n", (stop.tv_sec - start.tv_sec) * 1000000 + stop.tv_usec - start.tv_usec);
         }
+
+
 
         int inputAscii = in;
         int isValid = -2;
         inputAscii = inputAscii - 48;
 
         if(1 <= inputAscii && inputAscii <= 9){
+            struct timeval stop, start;
+            gettimeofday(&start, NULL);
+
             isValid = setTile(boardSelector.x, boardSelector.y, inputAscii, &board);
+
+            gettimeofday(&stop, NULL);
+            printf("took %lu for non brute force algo\n", (stop.tv_sec - start.tv_sec) * 1000000 + stop.tv_usec - start.tv_usec);
         } 
 
         printBoard(tileArray, &boardSelector);

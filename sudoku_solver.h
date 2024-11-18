@@ -18,6 +18,8 @@ struct tile{
     int yCor;
     int testedForPair;
 
+    int setByNotBruteForce;
+
 };
 
 struct row{

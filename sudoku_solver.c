@@ -1028,6 +1028,66 @@ void printBoard(struct tile*** tileArray, struct selector* boardSelector){
 }
 
 
+
+//used in the brute force algorithm
+int isTileAddedValid(struct board* board, int x, int y){
+    struct tile*** tileArray = board->tileArray;
+
+    //checks row
+    int rowNumsSeen[10] = {0};
+    for(int tileNum = 0; tileNum < 9; tileNum++){
+
+        struct tile* tileOn = tileArray[y][tileNum];
+        if(tileOn->num != -1){
+            
+            //number has already been seen in row so return invalid board
+            if(rowNumsSeen[tileOn->num] == 1){
+                return 0;
+            }
+
+            rowNumsSeen[tileOn->num] = 1;
+        }
+    }
+
+    //checks row
+    int colNumsSeen[10] = {0};
+    for(int tileNum = 0; tileNum < 9; tileNum++){
+
+        struct tile* tileOn = tileArray[y][tileNum];
+        if(tileOn->num != -1){
+            
+            //number has already been seen in row so return invalid board
+            if(rowNumsSeen[tileOn->num] == 1){
+                return 0;
+            }
+
+            colNumsSeen[tileOn->num] = 1;
+        }
+    }
+
+
+    //checks box
+    int boxNumsSeen[10] = {0};
+    int tileXStart = x / 3;
+    int tileYStart = y / 3;
+    for(int tileY = tileYStart; tileY < tileYStart + 3; tileY++){
+        for(int tileX = tileXStart; tileX < tileXStart + 3; tileX++){
+
+            struct tile* tileOn = tileArray[tileY][tileX];
+            if(tileOn->num != -1){
+                
+                //number has already been seen in row so return invalid board
+                if(boxNumsSeen[tileOn->num] == 1){
+                    return 0;
+                }
+
+                boxNumsSeen[tileOn->num] = 1;
+            }
+        }  
+    }
+    return 1;
+}
+
 //used in the brute force algorithm
 int isBoardValid(struct board* board){
     struct tile*** tileArray = board->tileArray;
@@ -1036,7 +1096,6 @@ int isBoardValid(struct board* board){
     for(int i = 0; i < 9; i++){
         int numsSeen[10] = {0};
         for(int tileNum = 0; tileNum < 9; tileNum++){
-
             struct tile* tileOn = tileArray[i][tileNum];
             if(tileOn->num != -1){
                 
@@ -1106,7 +1165,7 @@ int bruteForceOnTile(struct tile* tile, struct board* board, int direction){
         return 0;
     }
 
-    if(isBoardValid(board) == 1 && 
+    if(isTileAddedValid(board, tile->xCor, tile->yCor) == 1 && 
         tile->num != -1 && 
         direction == 1){  // if direction going backwards must increase by 1 at least
         return 1;
@@ -1243,7 +1302,6 @@ int main(){
 
     printBoard(tileArray, &boardSelector);
     while(1){
-
         char in;
         scanf(" %c",&in);
         fflush(stdin);

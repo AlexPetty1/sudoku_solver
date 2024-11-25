@@ -288,7 +288,10 @@ void updateBoxIgnoretiles(struct board* board, struct box* box, int numberAddedT
 // Description: tests if a box has 2 tiles with 2 of the same potential numbers and only 2 potential numbers
 //                  if true removes those 2 potential numbers as potential from all tiles in box
 //                  run when eliminating a option from a tile
-// Parameters: 
+//              call this function once a tile reaches 2 potential numbers
+// Parameters: board - saves board state
+//              box - box that is being tested
+//              knownDouble - tile that is confirmed to have 2 potential numbers aka as a double
 int checkBoxForPairs(struct board* board, struct box* box, struct tile* knownDouble){
     struct tile*** tileArray = board->tileArray;
 
@@ -342,7 +345,7 @@ int checkBoxForPairs(struct board* board, struct box* box, struct tile* knownDou
             ignore[ignoreTile1Index] = 1;
             ignore[ignoreTile2Index] = 1;
 
-            updateBoxIgnoretiles(board, box, value1, ignore);
+            updateBoxIgnoretiles(board, box, value1, ignore);   //calls ignore tile version to skip the double pair
             updateBoxIgnoretiles(board, box, value2, ignore);
             checkBox(board, box);
             return 1;
@@ -353,7 +356,10 @@ int checkBoxForPairs(struct board* board, struct box* box, struct tile* knownDou
 }
 
 // Function: checkBoxForDoublePointers
-// Description: 
+// Description: checks a box for a double pointer then updates the row if so
+//                  a double pointer is where there 2 potential places for a number in a box
+//                  and they are both in same row or column, if found you can remove all other
+//                  potential cases of the number from the 
 // Parameters: 
 int checkBoxForDoublePointers(struct board* board, struct box* box, int numberDecreased){
     struct tile*** tileArray = board->tileArray;
@@ -638,7 +644,9 @@ int checkAllTilesForSingles(struct board* board){
     return hasUpdates;
 }
 
-
+// Function: checkRowsForHiddenSingles
+// Description: checks all rows for hidden singles
+// Parameters: board - stores the state of the board
 int checkRowsForHiddenSingles(struct board* board){
     struct row** rowArray = board->rowArray;
     struct row** colArray = board->colArray;
@@ -657,8 +665,12 @@ int checkRowsForHiddenSingles(struct board* board){
     return hasUpdates;
 }
 
-
-
+// Function: checkBoxForHiddenSingle
+// Description: checks a row for a hidden single
+//                  a hidden single is where only one tile in a row can have that number
+//                  so the tile must be that number
+// Parameters: board - stores the state of the board
+//             box - box to check for hidden singles
 int checkRowForHiddenSingle(struct board* board, struct row* row){
     struct tile*** tileArray = board->tileArray;
     int hasUpdates = 0;
@@ -687,6 +699,9 @@ int checkRowForHiddenSingle(struct board* board, struct row* row){
 }
 
 
+// Function: checkBoxesForHiddenSingles
+// Description: checks all boxes for hidden singles
+// Parameters: board - stores the state of the board
 int checkBoxesForHiddenSingles(struct board* board){
     int hasUpdates = 0;
     for(int y = 0; y < 3; y++){
@@ -699,12 +714,18 @@ int checkBoxesForHiddenSingles(struct board* board){
     return hasUpdates;
 }
 
-
+// Function: checkBoxForHiddenSingle
+// Description: checks a box for a hidden single
+//                  a hidden single is where only one tile in a box can have that number
+//                  so the tile must be that number
+// Parameters: board - stores the state of the board
+//             box - box to check for hidden singles
 int checkBoxForHiddenSingle(struct board* board, struct box* box){
     struct tile*** tileArray = board->tileArray;
 
     int hasUpdates = 0;
     for(int number = 1; number < 10; number++){
+        //continues if there is not one potential tile for number
         if(box->potentialNumsInBox[number] != 1){
             continue;
         }
@@ -728,9 +749,9 @@ int checkBoxForHiddenSingle(struct board* board, struct box* box){
 }
 
 
-
-
-
+// Function: checkBoxesForHiddenPairs
+// Description: checks all boxes for a hidden pair
+// Parameters: board - stores the state of the board
 int checkBoxesForHiddenPairs(struct board* board){
     struct box*** boxArray = board->boxArray;
     int hasUpdates = 0;
@@ -743,6 +764,10 @@ int checkBoxesForHiddenPairs(struct board* board){
     return hasUpdates;
 }
 
+
+// Function: checkRowsForHiddenPair
+// Description: checks all rows and cols in a board for hidden pairs
+// Parameters: board - stores the state of the board
 int checkRowsForHiddenPairs(struct board* board){
     struct row** rowArray = board->rowArray;
     struct row** colArray = board->colArray;
@@ -762,6 +787,13 @@ int checkRowsForHiddenPairs(struct board* board){
 }
 
 
+
+// Function: checkRowForHiddenPair
+// Description: checks a row for a hidden pair
+//                  a hidden pair is when 2 numbers can only be found on 2 tiles in a row
+//                  any other potential number can be removed from the tiles 
+// Parameters: board - stores the state of the board
+//             row - row to be checked for a hidden pair
 int checkRowForHiddenPair(struct board* board, struct row* row){
     struct tile*** tileArray = board->tileArray;
     int hasUpdates = 0;
@@ -816,6 +848,13 @@ int checkRowForHiddenPair(struct board* board, struct row* row){
     return hasUpdates;
 }
 
+
+// Function: checkBoxForHiddenPair
+// Description: checks a box for a hidden pair
+//                  a hidden pair is when 2 numbers can only be found on 2 tiles in a box
+//                  any other potential number can be removed from the tile 
+// Parameters: board - stores the state of the board
+//             box - box to be checked for a hidden pair
 int checkBoxForHiddenPair(struct board* board, struct box* box){
     int hasUpdates = 0;
     for(int number = 1; number < 10; number++){
@@ -867,6 +906,12 @@ int checkBoxForHiddenPair(struct board* board, struct box* box){
     return hasUpdates;
 }
 
+// Function: updateTileHiddenPair
+// Description: called from check for hidden pairs
+//                  sets all potential numbers to 0, except for num1 and num2
+//                  will return if potential numbers got updated
+// Parameters: tile array - contains all the tiles
+//              boardSelector - stores what tile the selector is on
 int updateTileHiddenPair(struct board* board, struct tile* tile, int num1, int num2){
     struct box* box = getBoxFromCords(board->boxArray, tile->xCor, tile->yCor);
     struct row* row = board->rowArray[tile->yCor];
@@ -1028,9 +1073,13 @@ void printBoard(struct tile*** tileArray, struct selector* boardSelector){
 }
 
 
-
-//used in the brute force algorithm
+// Function: isTileAddedValid
+// Description: tests if a tile is valid used in brute force algo
+// Parameters: board - contains state of the board
+//              x - x value of tile
+//              y - y value of tile
 int isTileAddedValid(struct board* board, int x, int y){
+
     struct tile*** tileArray = board->tileArray;
 
     //checks row
@@ -1038,7 +1087,7 @@ int isTileAddedValid(struct board* board, int x, int y){
     for(int tileNum = 0; tileNum < 9; tileNum++){
 
         struct tile* tileOn = tileArray[y][tileNum];
-        if(tileOn->num != -1){
+        if(tileOn->num != -1){          //skips blank tiles
             
             //number has already been seen in row so return invalid board
             if(rowNumsSeen[tileOn->num] == 1){
@@ -1049,15 +1098,15 @@ int isTileAddedValid(struct board* board, int x, int y){
         }
     }
 
-    //checks row
+    //checks col
     int colNumsSeen[10] = {0};
     for(int tileNum = 0; tileNum < 9; tileNum++){
 
-        struct tile* tileOn = tileArray[y][tileNum];
+        struct tile* tileOn = tileArray[tileNum][x];
         if(tileOn->num != -1){
             
             //number has already been seen in row so return invalid board
-            if(rowNumsSeen[tileOn->num] == 1){
+            if(colNumsSeen[tileOn->num] == 1){
                 return 0;
             }
 
@@ -1065,11 +1114,10 @@ int isTileAddedValid(struct board* board, int x, int y){
         }
     }
 
-
     //checks box
     int boxNumsSeen[10] = {0};
-    int tileXStart = x / 3;
-    int tileYStart = y / 3;
+    int tileXStart = (x / 3) * 3;  //floors into to multiple of 3
+    int tileYStart = (y / 3) * 3;
     for(int tileY = tileYStart; tileY < tileYStart + 3; tileY++){
         for(int tileX = tileXStart; tileX < tileXStart + 3; tileX++){
 
@@ -1088,7 +1136,9 @@ int isTileAddedValid(struct board* board, int x, int y){
     return 1;
 }
 
-//used in the brute force algorithm
+// Function: isTileAddedValid
+// Description: tests if a board is valid used in brute force algo
+// Parameters: board - contains state of the sudoku board
 int isBoardValid(struct board* board){
     struct tile*** tileArray = board->tileArray;
 
@@ -1156,11 +1206,17 @@ int isBoardValid(struct board* board){
     return 1;
 }
 
-// return 1 for valid
-// return -1 for invalid backtrace
-// return 0 if already set
+// Function: bruteForceOnTile
+// Description: runs brute force on each tile then returns the next step needed
+//          return 1 for valid tile
+//          return -1 for invalid backtrace needed
+//          return 0 if already set
+// Parameters: board - contains all the tiles
+//              x - x value of tile
+//              y - y value of tile
 int bruteForceOnTile(struct tile* tile, struct board* board, int direction){
 
+    //skips if tile is not set by 
     if(tile->setByNotBruteForce == 1){
         return 0;
     }
@@ -1171,12 +1227,14 @@ int bruteForceOnTile(struct tile* tile, struct board* board, int direction){
         return 1;
     }
 
-    int numberTested;
+    //sets first number to test
+    int numberTested;           
     if(tile->num == -1){
         numberTested = 1;
     } else {
         numberTested = tile->num + 1;
     }
+
 
     while(numberTested < 10){
         if(tile->potentialNums[numberTested] == 1){
@@ -1193,6 +1251,10 @@ int bruteForceOnTile(struct tile* tile, struct board* board, int direction){
     return -1;
 }
 
+// Function: bruteForceAlgoithm
+// Description: runs a brute force algorithm backtracing algoritm on the sudoku board
+//     uses result from normal solving algorithm
+// Parameters: board - contains state of the board
 void bruteForceAlgorithm(struct board* board){
     struct tile*** tileArray = board->tileArray;
 
@@ -1236,13 +1298,13 @@ void bruteForceAlgorithm(struct board* board){
         }
 
         if(tileOnY == -1){
-            printf("Y became -1\n");
+            printf("No solution\n");
             break;
         }
         
 
         if(tileOnY == 9){
-            printf("Y became 9\n");
+            printf("Found a solution\n");
             break;
         }
         index++;
@@ -1306,6 +1368,7 @@ int main(){
         scanf(" %c",&in);
         fflush(stdin);
 
+        //gets user input
         if(in == 'a'){
             boardSelector.x = boardSelector.x - 1;
             if(boardSelector.x < 0){
@@ -1326,9 +1389,9 @@ int main(){
             if(boardSelector.x > 8){
                 boardSelector.x = 0;
             }
-        } else if(in == 'q'){
+        } else if(in == 'q'){               //quits
             break;
-        } else if(in == 'b'){
+        } else if(in == 'b'){               //runs brute force algorithm then, quits
 
             struct timeval stop, start;
             gettimeofday(&start, NULL);
@@ -1337,6 +1400,7 @@ int main(){
 
             gettimeofday(&stop, NULL);
             printf("took %lu for brute force\n", (stop.tv_sec - start.tv_sec) * 1000000 + stop.tv_usec - start.tv_usec);
+            break;
         }
 
 

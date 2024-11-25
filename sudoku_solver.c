@@ -1215,16 +1215,30 @@ int isBoardValid(struct board* board){
 //              x - x value of tile
 //              y - y value of tile
 int bruteForceOnTile(struct tile* tile, struct board* board, int direction){
+    struct box* boxOn = getBoxFromCords(board->boxArray, tile->xCor, tile->yCor);
+    struct row* rowOn = board->rowArray[tile->yCor];
+    struct row* colOn = board->colArray[tile->xCor];
 
-    //skips if tile is not set by 
+    //skips if tile is not set by brute force
     if(tile->setByNotBruteForce == 1){
         return 0;
     }
 
-    if(isTileAddedValid(board, tile->xCor, tile->yCor) == 1 && 
-        tile->num != -1 && 
-        direction == 1){  // if direction going backwards must increase by 1 at least
-        return 1;
+    // moves to next tile 
+    if(tile->num != -1 && direction == 1){
+        if(boxOn->potentialNumsInBox[tile->num] > 0 &&
+            rowOn->potentialNumsInRow[tile->num] > 0 &&
+            colOn->potentialNumsInRow[tile->num] > 0){
+                
+                return 1;
+        }
+    }
+
+    //if backtracing tile will change and so opens tile up
+    if(direction == -1 && tile->num != -1){
+        boxOn->potentialNumsInBox[tile->num] = 1;
+        rowOn->potentialNumsInRow[tile->num] = 1;
+        colOn->potentialNumsInRow[tile->num] = 1;
     }
 
     //sets first number to test
@@ -1235,40 +1249,60 @@ int bruteForceOnTile(struct tile* tile, struct board* board, int direction){
         numberTested = tile->num + 1;
     }
 
-
+    //looks for next tile
     while(numberTested < 10){
-        if(tile->potentialNums[numberTested] == 1){
-            tile->num = numberTested;
+        if(tile->potentialNums[numberTested] == 1){     //makes sure tile is a potential number from normal solve
 
-            if(isBoardValid(board) == 1){
+            if(boxOn->potentialNumsInBox[numberTested] > 0 &&
+                rowOn->potentialNumsInRow[numberTested] > 0 &&
+                colOn->potentialNumsInRow[numberTested] > 0){
+                
+
+                boxOn->potentialNumsInBox[numberTested] = 0;
+                rowOn->potentialNumsInRow[numberTested] = 0;
+                colOn->potentialNumsInRow[numberTested] = 0;
+                tile->num = numberTested;
                 return 1;
             }
         }
 
         numberTested++;
     }
+
+    //could not find any more potential tiles 
     tile->num = -1;
     return -1;
 }
 
-// Function: bruteForceAlgoithm
-// Description: runs a brute force algorithm backtracing algoritm on the sudoku board
-//     uses result from normal solving algorithm
-// Parameters: board - contains state of the board
+
+// Function: bruteForceOnTile
+// Description: runs brute force on each tile then returns the next step needed
+//          return 1 for valid tile
+//          return -1 for invalid backtrace needed
+//          return 0 if already set
+// Parameters: board - contains all the tiles
+//              x - x value of tile
+//              y - y value of tile
 void bruteForceAlgorithm(struct board* board){
     struct tile*** tileArray = board->tileArray;
+    struct box*** boxArray = board->boxArray;
+    struct row** colArray = board->colArray;
+    struct row** rowArray = board->rowArray;
 
     int tileOnX = 0;
     int tileOnY = 0;
     int direction = 1;
-    int result = 0;
+    int nextStep = 0;   // -1 if backtrace, 0 if tile already solved, 1 if move to next tile
     int index = 0;
     while(1){
         struct tile* tileOn = tileArray[tileOnY][tileOnX];
-        //on tile
-        result = bruteForceOnTile(tileOn, board, direction);
+        struct box* boxOn = getBoxFromCords(board->boxArray, tileOnX, tileOnY);
+        struct row* rowOn = board->rowArray[tileOnY];
+        struct row* colOn = board->colArray[tileOnX];
+
+        nextStep = bruteForceOnTile(tileOn, board, direction);
         
-        switch (result){
+        switch (nextStep){
             case -1:
                 direction = -1;
                 tileOnX--;
@@ -1397,13 +1431,12 @@ int main(){
             gettimeofday(&start, NULL);
 
             bruteForceAlgorithm(&board);
-
             gettimeofday(&stop, NULL);
+
             printf("took %lu for brute force\n", (stop.tv_sec - start.tv_sec) * 1000000 + stop.tv_usec - start.tv_usec);
+            printBoard(tileArray, &boardSelector);
             break;
         }
-
-
 
         int inputAscii = in;
         int isValid = -2;

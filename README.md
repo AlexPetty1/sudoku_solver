@@ -1,7 +1,7 @@
 Sudoku Solver Project
 Is able to solve puzzles from the game Sudoku. 
 
-Uses a combination of a normal sudoku solver that works by elimination potential options and a bruteforce backtracing that uses the partially solved sudoku as input if the normal did not solve it.
+Uses a combination of a normal sudoku solver that works by elimination potential options and a bruteforce backtracing algorithm that uses the partially solved sudoku as input if the normal did not solve it.
 
 Normal Sudoku Solver:
 Can ushally solve medium nyt sudokus and sometimes hard.

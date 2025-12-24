@@ -4,7 +4,6 @@
 
 #include "sudoku_solver.h"
 
-
 // Function: makeRow
 // Description: mallocs a tile struct and returns it's pointer
 // Parameters: x - x cordinate of the tile
@@ -60,6 +59,54 @@ struct box* makeBox(int x, int y){
         newBox->hiddenPairChecked[i] = 0;
     }
 }
+
+struct board* makeBoard(){
+    struct tile*** tileArray;
+    struct box*** boxArray;
+    struct row** rowArray;
+    struct row** colArray;
+    struct selector boardSelector;
+
+    boardSelector.x = 0;
+    boardSelector.y = 0;
+
+    tileArray = malloc(ROW_LENGTH * sizeof(struct tile**));
+    for(int y = 0; y < ROW_LENGTH; y++){
+        tileArray[y] = malloc(ROW_LENGTH * sizeof(struct tile*));
+        for(int x = 0; x < ROW_LENGTH; x++){
+            tileArray[y][x] = makeTile(x, y);
+        }
+    }
+
+    boxArray = malloc(SIZE_OF_BOXES * sizeof(struct box**));
+    for(int y = 0; y < SIZE_OF_BOXES; y++){
+        boxArray[y] = malloc(SIZE_OF_BOXES * sizeof(struct box*));
+        for(int x = 0; x < SIZE_OF_BOXES; x++){
+            boxArray[y][x] = makeBox(x, y);
+        }
+    }
+
+    colArray = malloc(ROW_LENGTH * sizeof(struct row*));
+    for(int i = 0; i < ROW_LENGTH; i++){
+        colArray[i] = makeRow(i, 1);
+    }
+
+    rowArray = malloc(ROW_LENGTH * sizeof(struct row*));
+    for(int i = 0; i < ROW_LENGTH; i++){
+        rowArray[i] = makeRow(i, 0);
+    }
+
+    struct board* board = malloc(sizeof(struct board));
+
+    board->tileArray = tileArray;
+    board->rowArray = rowArray;
+    board->colArray = colArray;
+    board->boxArray = boxArray;
+    board->selector = boardSelector;
+
+    return board;
+}
+
 
 // Function: freeTileArray
 // Description: frees a every tile in 2d array and set it to NULL
@@ -118,9 +165,20 @@ void freeRowArray(struct row** rowArray, int rowLength){
     rowArray = NULL;
 }
 
+// Function: freeBoard
+// Description: frees the all the boards memory and sets it to null
+// Parameters: board - 
+void freeBoard(struct board* board){
+    freeBoxArray(board->boxArray, SIZE_OF_BOXES);
+    freeTileArray(board->tileArray, ROW_LENGTH);
+    freeRowArray(board->rowArray, ROW_LENGTH);
+    freeRowArray(board->colArray, ROW_LENGTH);
+    free(board);
+    board = NULL;
+}
 
-// Function: updateBox
-// Description: updates the box to have the numberAddedToBox, 
+// Function: updateRow
+// Description: updates the row to have the numberAddedToRow, 
 //              updates each tile in box to not have numberAddedToBox among potential numbers
 // Parameters: tileArray - the array of all tiles
 //              boxArray - pointer to the box being added to
@@ -160,7 +218,13 @@ void updateRow(struct board* board, struct row* row, int numberAddedToRow){
 }
 
 
-
+// Function: updateRow
+// Description: a modification to update row, which removes the potential number of numberAddedToRow.
+//              from each of the tiles, but skips tiles in tiles ignored array
+//              Is useful for when checking the box for pointers test
+// Parameters: tileArray - the array of all tiles
+//              boxArray - pointer to the box being added to
+//              numberAddedToBox - the number is added to the box
 void updateRowIgnoreTiles(struct board* board, struct row* row, int numberAddedToRow, int tilesIgnored[9]){
     struct tile*** tileArray = board->tileArray;
 
@@ -725,7 +789,7 @@ int checkBoxForHiddenSingle(struct board* board, struct box* box){
 
     int hasUpdates = 0;
     for(int number = 1; number < 10; number++){
-        //continues if there is not one potential tile for number
+        //continues if there is not a potential tile for number
         if(box->potentialNumsInBox[number] != 1){
             continue;
         }
@@ -1038,23 +1102,22 @@ struct box* getBoxFromCords(struct box*** boxArray, int x, int y){
 // Description: prints out the state of the board
 // Parameters: tile array - contains all the tiles
 //              boardSelector - stores what tile the selector is on
-void printBoard(struct tile*** tileArray, struct selector* boardSelector){
-    printf("\n\n");
+void printBoard(struct board* board){
     for(int y = 0; y < 9; y++){
         for(int x = 0; x < 9; x++){
-            if(boardSelector->x == x && boardSelector->y == y){
+            if(board->selector.x == x && board->selector.y == y){
                 printf("[");
             } else {
                 printf(" ");
             }
 
-            if(tileArray[y][x]->num == -1){
+            if(board->tileArray[y][x]->num == -1){
                 printf("·");
             } else {
-                printf("%d", tileArray[y][x]->num);
+                printf("%d", board->tileArray[y][x]->num);
             }
 
-            if(boardSelector->x == x && boardSelector->y == y){
+            if(board->selector.x == x && board->selector.y == y){
                 printf("]");
             } else {
                 printf(" ");
@@ -1070,6 +1133,7 @@ void printBoard(struct tile*** tileArray, struct selector* boardSelector){
             printf("-----------------------------\n");
         }
     }
+    printf("\n\n");
 }
 
 
@@ -1346,122 +1410,80 @@ void bruteForceAlgorithm(struct board* board){
 }
 
 
+void interactiveMode(struct board* board){
+
+    char input = ' '; 
+    struct selector* boardSelector = &board->selector;
+
+    // inside of insert tile mode
+    while((input != 'b') && (input != 'q')){
+
+        printBoard(board);
+        scanf(" %c",&input);
+        fflush(stdin);
+
+        if(input == 'a'){
+            boardSelector->x = boardSelector->x - 1;
+            if(boardSelector->x < 0){
+                boardSelector->x = 8;
+            }
+        } else if(input == 'w'){
+            boardSelector->y = boardSelector->y - 1;
+            if(boardSelector->y < 0){
+                boardSelector->y = 8;
+            }
+        } else if(input == 's'){
+            boardSelector->y = boardSelector->y + 1;
+            if(boardSelector->y > 8){
+                boardSelector->y = 0;
+            }
+        } else if(input == 'd'){
+            boardSelector->x = boardSelector->x + 1;
+            if(boardSelector->x > 8){
+                boardSelector->x = 0;
+            }
+        } 
+
+        int inputAscii = input;
+        int isTileValid = -2;
+        inputAscii = inputAscii - '0';
+
+        if(1 <= inputAscii && inputAscii <= 9){
+            isTileValid = setTile(boardSelector->x, boardSelector->y, inputAscii, board);
+        } 
+
+        if(isTileValid == -1){
+            printf("Value: %d, is invalid at cords x: %d y:%d \n", inputAscii, boardSelector->x, boardSelector->y);
+        }
+    }
+
+
+    if(input == 'b'){
+        struct timeval stop, start;
+        gettimeofday(&start, NULL);
+
+        bruteForceAlgorithm(board);
+
+        gettimeofday(&stop, NULL);
+        printf("took %lu microseconds for brute force\n", (stop.tv_sec - start.tv_sec) * 1000000 + stop.tv_usec - start.tv_usec);
+
+        printBoard(board);
+    }
+
+    if(input == 'q'){
+        printf("Exiting from interactive mode\n\n");
+    }
+}
+
+
 
 
 int main(){
-    struct tile*** tileArray;
-    struct box*** boxArray;
-    struct row** rowArray;
-    struct row** colArray;
-    struct selector boardSelector;
+    
+    struct board* board = makeBoard();
 
-    int sizeOfBoxes = 3;
-    int numberOfBoxes = sizeOfBoxes * sizeOfBoxes;
-    int rowLength = sizeOfBoxes * sizeOfBoxes;
-    int numberOfTiles = rowLength * rowLength;
-
-    boardSelector.x = 0;
-    boardSelector.y = 0;
-
-    tileArray = malloc(rowLength * sizeof(struct tile**));
-    for(int y = 0; y < rowLength; y++){
-        tileArray[y] = malloc(rowLength * sizeof(struct tile*));
-        for(int x = 0; x < rowLength; x++){
-            tileArray[y][x] = makeTile(x, y);
-        }
-    }
-
-    boxArray = malloc(sizeOfBoxes * sizeof(struct box**));
-    for(int y = 0; y < sizeOfBoxes; y++){
-        boxArray[y] = malloc(sizeOfBoxes * sizeof(struct box*));
-        for(int x = 0; x < sizeOfBoxes; x++){
-            boxArray[y][x] = makeBox(x, y);
-        }
-    }
-
-    colArray = malloc(rowLength * sizeof(struct row*));
-    for(int i = 0; i < rowLength; i++){
-        colArray[i] = makeRow(i, 1);
-    }
-
-    rowArray = malloc(rowLength * sizeof(struct row*));
-    for(int i = 0; i < rowLength; i++){
-        rowArray[i] = makeRow(i, 0);
-    }
-
-    struct board board;
-    board.tileArray = tileArray;
-    board.rowArray = rowArray;
-    board.colArray = colArray;
-    board.boxArray = boxArray;
-    board.selector = boardSelector;
-
-    printBoard(tileArray, &boardSelector);
-    while(1){
-        char in;
-        scanf(" %c",&in);
-        fflush(stdin);
-
-        //gets user input
-        if(in == 'a'){
-            boardSelector.x = boardSelector.x - 1;
-            if(boardSelector.x < 0){
-                boardSelector.x = 8;
-            }
-        } else if(in == 'w'){
-            boardSelector.y = boardSelector.y - 1;
-            if(boardSelector.y < 0){
-                boardSelector.y = 8;
-            }
-        } else if(in == 's'){
-            boardSelector.y = boardSelector.y + 1;
-            if(boardSelector.y > 8){
-                boardSelector.y = 0;
-            }
-        } else if(in == 'd'){
-            boardSelector.x = boardSelector.x + 1;
-            if(boardSelector.x > 8){
-                boardSelector.x = 0;
-            }
-        } else if(in == 'q'){               //quits
-            break;
-        } else if(in == 'b'){               //runs brute force algorithm then, quits
-
-            struct timeval stop, start;
-            gettimeofday(&start, NULL);
-
-            bruteForceAlgorithm(&board);
-            gettimeofday(&stop, NULL);
-
-            printf("took %lu for brute force\n", (stop.tv_sec - start.tv_sec) * 1000000 + stop.tv_usec - start.tv_usec);
-            printBoard(tileArray, &boardSelector);
-            break;
-        }
-
-        int inputAscii = in;
-        int isValid = -2;
-        inputAscii = inputAscii - 48;
-
-        if(1 <= inputAscii && inputAscii <= 9){
-            struct timeval stop, start;
-            gettimeofday(&start, NULL);
-
-            isValid = setTile(boardSelector.x, boardSelector.y, inputAscii, &board);
-
-            gettimeofday(&stop, NULL);
-            printf("took %lu for non brute force algo\n", (stop.tv_sec - start.tv_sec) * 1000000 + stop.tv_usec - start.tv_usec);
-        } 
-
-        printBoard(tileArray, &boardSelector);
-
-        if(isValid == -1){
-            printf("Value: %d, is invalid at cords x: %d y:%d \n", inputAscii, boardSelector.x, boardSelector.y);
-        }
-    }   
-
-    freeBoxArray(boxArray, sizeOfBoxes);
-    freeTileArray(tileArray, rowLength);
-    freeRowArray(rowArray, rowLength);
-    freeRowArray(colArray, rowLength);
+    interactiveMode(board);
+    
+    freeBoard(board);
 }
 

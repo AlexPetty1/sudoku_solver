@@ -2,6 +2,14 @@
 #define _SUDOKU_SOLVER_H
 
 
+
+//Constants
+const int SIZE_OF_BOXES = 3;
+const int NUMBER_OF_BOXES = SIZE_OF_BOXES * SIZE_OF_BOXES;
+const int ROW_LENGTH = SIZE_OF_BOXES * SIZE_OF_BOXES;
+const int NUMBER_OF_TILES = ROW_LENGTH * ROW_LENGTH;
+
+
 struct selector{
     int x;
     int y;
@@ -9,7 +17,7 @@ struct selector{
 
 struct tile{
     int potentialNums[10];       // acts as a map
-                                 // 0 can not be a potentia tile
+                                 // 0 can not be a potential tile
                                  // 1 is valid potential tile
     int numberOfPotentialNums;
     int num;                    // number in box
@@ -18,7 +26,8 @@ struct tile{
     int yCor;
     int testedForPair;
 
-    int setByNotBruteForce;
+    int setByNotBruteForce;     // used so brute force will skip over tiles, 
+                                // set by the normal solving algoritm
 
 };
 
@@ -54,6 +63,7 @@ struct board{
 struct tile* makeTile(int x, int y);
 struct row* makeRow(int rowNum, int isColumn);
 struct box* makeBox(int xCor, int yCor);
+struct board* makeBoard();
 
 int setTile(int x, int y, int number, struct board* board);
 
@@ -62,6 +72,7 @@ struct box* getBoxFromCords(struct box*** boxArray, int x, int y);
 void freeTileArray(struct tile*** tileArray, int rowLength);
 void freeBoxArray(struct box*** boxArray, int boxLength);
 void freeRowArray(struct row** rowArray, int rowLength);
+void freeBoard(struct board* board);
 
 void updateRow(struct board* board, struct row* rowArray, int numberAddedToRow);
 void updateBox(struct board* board, struct box* boxArray, int numberAddedToBox);
@@ -89,6 +100,10 @@ int checkBoxesForHiddenPairs(struct board* board);
 int checkBoxForHiddenPair(struct board* board, struct box* box);
 int updateTileHiddenPair(struct board* board, struct tile* tile, int num1, int num2);
 
-void printBoard(struct tile*** tileArray, struct selector* boardSelector);
+
+void interactiveMode(struct board* board);
+
+
+void printBoard(struct board* board);
 
 #endif

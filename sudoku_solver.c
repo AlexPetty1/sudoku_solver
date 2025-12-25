@@ -108,6 +108,64 @@ struct board* makeBoard(){
 }
 
 
+int resetBoard(struct board* board){
+    if(board == NULL){
+        return -1;
+    }
+
+    //resets tiles
+    for(int y = 0; y < ROW_LENGTH; y++){
+        for(int x = 0; x < ROW_LENGTH; x++){
+            struct tile* tileOn = board->tileArray[y][x];
+            tileOn->num = -1;
+            tileOn->numberOfPotentialNums = 9;
+            tileOn->testedForPair = 0;
+            tileOn->setByNotBruteForce = 0;
+            tileOn->potentialNums[0] = 0;
+
+            for(int i = 1; i < 10; i++){
+                tileOn->potentialNums[i] = 1;
+            }
+        }
+    }
+
+    //resets boxes
+    for(int y = 0; y < SIZE_OF_BOXES; y++){
+        for(int x = 0; x < SIZE_OF_BOXES; x++){
+            struct box* boxOn = board->boxArray[y][x];
+            for(int i = 0; i < 10; i++){
+                boxOn->potentialNumsInBox[i] = 9;
+                boxOn->doublePointerChecked[i] = 0;
+                boxOn->hiddenPairChecked[i] = 0;
+            }  
+        }
+    }
+
+    //reset rows
+    for(int i = 0; i < ROW_LENGTH; i++){
+        struct row* rowOn = board->rowArray[i];
+        for(int j = 0; j < 10; j++){
+            rowOn->potentialNumsInRow[j] = 9;
+            rowOn->hiddenPairChecked[j] = 0;
+        }
+    }
+
+    //reset cols
+    for(int i = 0; i < ROW_LENGTH; i++){
+        struct row* colOn = board->colArray[i];
+        for(int j = 0; j < 10; j++){
+            colOn->potentialNumsInRow[j] = 9;
+            colOn->hiddenPairChecked[j] = 0;
+        }
+    }
+
+
+
+}
+
+
+
+
 // Function: freeTileArray
 // Description: frees a every tile in 2d array and set it to NULL
 // Parameters: tileArray - array of tiles being freed
@@ -789,7 +847,7 @@ int checkBoxForHiddenSingle(struct board* board, struct box* box){
 
     int hasUpdates = 0;
     for(int number = 1; number < 10; number++){
-        //continues if there is not a potential tile for number
+        //ensures there is only 1 option for the number in the box
         if(box->potentialNumsInBox[number] != 1){
             continue;
         }
@@ -1021,6 +1079,10 @@ int setTile(int x, int y, int number, struct board* board){
     struct row* col = board->colArray[x];
     struct tile* tile = board->tileArray[y][x];
 
+    if(number < 1 || number > 9){
+        return -1;
+    }
+
     //returns if number is not a available number on the tile
     if(tile->potentialNums[number] == 0){
         return -1;
@@ -1033,7 +1095,7 @@ int setTile(int x, int y, int number, struct board* board){
     tile->potentialNums[number] = 0;
     tile->setByNotBruteForce = 1;
 
-    //sets all numbers to be not available
+    //sets all numbers in tile to not be available
     //updates each row & box to decrease the option
     for(int i = 0; i < 10; i++){
         if(tile->potentialNums[i] == 1){
@@ -1288,7 +1350,7 @@ int bruteForceOnTile(struct tile* tile, struct board* board, int direction){
         return 0;
     }
 
-    // moves to next tile 
+    // moves to next tile as the tile is valid
     if(tile->num != -1 && direction == 1){
         if(boxOn->potentialNumsInBox[tile->num] > 0 &&
             rowOn->potentialNumsInRow[tile->num] > 0 &&
@@ -1410,17 +1472,31 @@ void bruteForceAlgorithm(struct board* board){
 }
 
 
+
 void interactiveMode(struct board* board){
 
-    char input = ' '; 
+    char input = 'a'; 
     struct selector* boardSelector = &board->selector;
+
+    getchar();  // fixes a bug with first input being ignored, might find a better fix later
+
+    printf("Interactive mode, will attempt to solve the puzzle as you play\n"); 
+    printf("    - Use wasd to move the selector\n");
+    printf("    - Use 1-9 to input a number\n");
+    printf("    - Enter b to bruteforce the solution after inputing all the numbers");
+    printf("    - Enter q to quit\n");
+    printf("Note: There is no way to delete, undo, or replace a number in this mode\n\n");
+
 
     // inside of insert tile mode
     while((input != 'b') && (input != 'q')){
 
         printBoard(board);
-        scanf(" %c",&input);
-        fflush(stdin);
+
+        //gets input and removes trailing characters
+        input = getchar();
+        int c;
+        while ((c = getchar()) != '\n' && c != EOF);
 
         if(input == 'a'){
             boardSelector->x = boardSelector->x - 1;
@@ -1457,7 +1533,6 @@ void interactiveMode(struct board* board){
         }
     }
 
-
     if(input == 'b'){
         struct timeval stop, start;
         gettimeofday(&start, NULL);
@@ -1475,6 +1550,97 @@ void interactiveMode(struct board* board){
     }
 }
 
+void stringMode(struct board* board){
+
+}
+
+
+void placeMode(struct board* board){
+    
+    struct board* tempBoard = makeBoard();  //temp board is used for placing as it comes, 
+                                            //  with print board and verify board functions instead of a basic 2d array
+    struct tile*** tempBoardTiles = tempBoard->tileArray;
+
+    char input = 'a'; 
+    struct selector* boardSelector = &tempBoard->selector;
+    int validAndReadyBoard = 0;
+
+    getchar();  // fixes a bug with first input being ignored, might find a better fix later
+
+    printf("Place mode, place all the tiles then enter 'c' to crack the puzzle.\n"); 
+    printf("    - Use wasd to move the selector\n");
+    printf("    - Use 1-9 to input a number\n");
+    printf("    - Enter 0 to delete a number\n");
+    printf("    - Enter q to quit\n\n");
+
+    while((validAndReadyBoard == 0) && (input != 'q')){
+        printBoard(tempBoard);
+
+        //gets input and removes trailing characters
+        input = getchar();
+        int c;
+        while ((c = getchar()) != '\n' && c != EOF);
+
+
+        if(input == 'a'){
+            boardSelector->x = boardSelector->x - 1;
+            if(boardSelector->x < 0){
+                boardSelector->x = 8;
+            }
+        } else if(input == 'w'){
+            boardSelector->y = boardSelector->y - 1;
+            if(boardSelector->y < 0){
+                boardSelector->y = 8;
+            }
+        } else if(input == 's'){
+            boardSelector->y = boardSelector->y + 1;
+            if(boardSelector->y > 8){
+                boardSelector->y = 0;
+            }
+        } else if(input == 'd'){
+            boardSelector->x = boardSelector->x + 1;
+            if(boardSelector->x > 8){
+                boardSelector->x = 0;
+            }
+        } else if('1' <= input && input <= '9'){
+            int inputAscii = input - '0';
+
+            //does not use setTile as that does not allow for replacing tile values
+            //  and can lead to additional tiles being placed
+            struct tile* tileOn = tempBoardTiles[boardSelector->y][boardSelector->x];  
+            tileOn->num = inputAscii;
+        } else if(input == '0'){
+            struct tile* tileOn = tempBoardTiles[boardSelector->y][boardSelector->x];  
+            tileOn->num = -1;                       //-1 means tile is a blank tile
+        }else if(input == 'c'){
+            if(isBoardValid(tempBoard)){
+                validAndReadyBoard = 1;
+            } else {
+                printf("The board is currently invalid with at least 2 squares that conflict\n");
+            }
+        } else {
+            printf("Input '%c' is invalid\n", input);
+        }
+    }
+
+    //sets tiles from the temp board on to the actual board used for solving
+    for(int y = 0; y < ROW_LENGTH; y++){
+        for(int x = 0; x < ROW_LENGTH; x++){
+            struct tile* tileOn = tempBoardTiles[boardSelector->y][boardSelector->x];
+            if(tileOn->num != -1){
+                setTile(x, y, tileOn->num, board);
+            }
+        }
+    }
+
+    bruteForceAlgorithm(board);
+    printBoard(board);
+
+
+    freeBoard(tempBoard);
+}
+
+
 
 
 
@@ -1482,7 +1648,35 @@ int main(){
     
     struct board* board = makeBoard();
 
-    interactiveMode(board);
+    int input = -1;
+
+    do{
+        //gets user input
+        int result = -1;
+        do{
+            printf("Input:\n");
+            printf("    1: For interactive mode\n");
+            printf("    2: Place mode\n");
+            printf("    3: Quit\n");
+            printf(": ");
+
+            result = scanf("%d", &input);
+        }while((result == -1) ||
+            (input < 1) ||
+            (input > 3));
+
+        switch(input){
+            case 1:
+                interactiveMode(board);
+            case 2:
+                placeMode(board);
+        }
+
+
+        resetBoard(board);
+    } while(input != 3);
+    
+
     
     freeBoard(board);
 }

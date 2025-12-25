@@ -100,9 +100,9 @@ int checkBoxesForHiddenPairs(struct board* board);
 int checkBoxForHiddenPair(struct board* board, struct box* box);
 int updateTileHiddenPair(struct board* board, struct tile* tile, int num1, int num2);
 
-
 void interactiveMode(struct board* board);
-
+void placeMode(struct board* board);
+void stringMode(struct board* board);
 
 void printBoard(struct board* board);
 

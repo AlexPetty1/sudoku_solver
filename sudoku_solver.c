@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
+#include <string.h>
 
 #include "sudoku_solver.h"
 
@@ -1551,30 +1552,109 @@ void interactiveMode(struct board* board){
 }
 
 void stringMode(struct board* board){
+    printf("\n\nString mode, enter a 81 character string to input the sudoku board\n");
+    printf("Many sites with sudokus will provide the string\n");
+    printf("    - Numbers are inputed left to right, top to bottom\n");
+    printf("    - 1-9, will correspond to inputting a number at that place\n");
+    printf("    - 0, is a blank tile\n\n");
 
+    //gets rid rest of buff needed as switching from scanf to fgets is weird
+    int c;
+    while ( (c = getchar()) != EOF && c != '\n') { }
+
+    char buffer[NUMBER_OF_TILES + 2];
+    printf("Input a string: \n");
+    fgets(buffer, sizeof(buffer), stdin);
+
+    int bufferLen = strlen(buffer);
+    if(buffer[bufferLen - 1] == '\n'){
+        buffer[bufferLen - 1] = '\0';
+        bufferLen = bufferLen - 1;
+    }
+
+    if(bufferLen > NUMBER_OF_TILES){
+        int c;
+        while ((c = getchar()) != '\n' && c != EOF);
+
+        printf("\nWarning, more than 81 characters string entered\n");
+        printf("    Any characters above 81 will be ignored\n");
+    }
+
+    if(bufferLen < NUMBER_OF_TILES){
+        printf("\nWarning, less than 81 characters string entered\n");
+        printf("    Will assume the remaining tiles are blank\n");
+    }
+
+    int numTilesToEnter = NUMBER_OF_TILES;
+    if(bufferLen < NUMBER_OF_TILES){
+        numTilesToEnter = bufferLen;
+    }
+
+    struct board* displayBoard = makeBoard();   //display board is used as using set tile on real board will try and solve it
+    int invalidChars = 0;
+    int x = 0;
+    int y = 0;
+    for(int i = 0; i < numTilesToEnter; i++){
+        x = i % 9;
+        y = i / 9;
+
+        char charOn = buffer[i];
+        if('1' <= charOn && charOn <= '9'){
+            int charOnInt = charOn - '0';
+            setTile(x, y, charOnInt, board);
+
+            //sets display board
+            struct tile* tileOn = displayBoard->tileArray[y][x];
+            tileOn->num = charOnInt;
+
+        } else if (charOn == '0'){
+            //blank on purpose
+        } else {
+            invalidChars++;
+        }
+    }
+
+    if(invalidChars > 0){
+        printf("Warning: %d invalid chars inputed in string\n", invalidChars);
+        printf("    Invalid chars will be treated as blanks\n\n");
+    }
+
+    printf("\nInputted board: \n");
+    printBoard(displayBoard);
+    
+    if(isBoardValid(displayBoard) == 0){
+        printf("Inputted board is invalid!!\n\n");
+        freeBoard(displayBoard);
+        return;
+    }
+
+    bruteForceAlgorithm(board);
+    printBoard(board);
+
+    freeBoard(displayBoard);
 }
 
 
 void placeMode(struct board* board){
     
-    struct board* tempBoard = makeBoard();  //temp board is used for placing as it comes, 
-                                            //  with print board and verify board functions instead of a basic 2d array
-    struct tile*** tempBoardTiles = tempBoard->tileArray;
+    struct board* displayBoard = makeBoard();   //display board is used for placing as it comes, 
+                                                //  with print board and verify board functions instead of a basic 2d array
+    struct tile*** tempBoardTiles = displayBoard->tileArray;
 
     char input = 'a'; 
-    struct selector* boardSelector = &tempBoard->selector;
+    struct selector* boardSelector = &displayBoard->selector;
     int validAndReadyBoard = 0;
 
     getchar();  // fixes a bug with first input being ignored, might find a better fix later
 
-    printf("Place mode, place all the tiles then enter 'c' to crack the puzzle.\n"); 
+    printf("\n\nPlace mode, place all the tiles then enter 'c' to crack the puzzle.\n"); 
     printf("    - Use wasd to move the selector\n");
     printf("    - Use 1-9 to input a number\n");
     printf("    - Enter 0 to delete a number\n");
     printf("    - Enter q to quit\n\n");
 
     while((validAndReadyBoard == 0) && (input != 'q')){
-        printBoard(tempBoard);
+        printBoard(displayBoard);
 
         //gets input and removes trailing characters
         input = getchar();
@@ -1613,7 +1693,7 @@ void placeMode(struct board* board){
             struct tile* tileOn = tempBoardTiles[boardSelector->y][boardSelector->x];  
             tileOn->num = -1;                       //-1 means tile is a blank tile
         }else if(input == 'c'){
-            if(isBoardValid(tempBoard)){
+            if(isBoardValid(displayBoard)){
                 validAndReadyBoard = 1;
             } else {
                 printf("The board is currently invalid with at least 2 squares that conflict\n");
@@ -1623,6 +1703,8 @@ void placeMode(struct board* board){
         }
     }
 
+    struct timeval start, endNormal, endBrutforce;
+    gettimeofday(&start, NULL);
     //sets tiles from the temp board on to the actual board used for solving
     for(int y = 0; y < ROW_LENGTH; y++){
         for(int x = 0; x < ROW_LENGTH; x++){
@@ -1633,11 +1715,20 @@ void placeMode(struct board* board){
         }
     }
 
+    gettimeofday(&endNormal, NULL);
+    
+
+
     bruteForceAlgorithm(board);
+    gettimeofday(&endBrutforce, NULL);
+    printf("took %lu microseconds for normal algorithm\n", (endNormal.tv_sec - start.tv_sec) * 1000000 + endNormal.tv_usec - start.tv_usec);
+    printf("took %lu microseconds for brute force\n", (endBrutforce.tv_sec - endNormal.tv_sec) * 1000000 + endBrutforce.tv_usec - endNormal.tv_usec);
+    printf("took %lu microseconds for whole process\n", (endBrutforce.tv_sec - start.tv_sec) * 1000000 + endBrutforce.tv_usec - start.tv_usec);
+
     printBoard(board);
 
 
-    freeBoard(tempBoard);
+    freeBoard(displayBoard);
 }
 
 
@@ -1645,9 +1736,7 @@ void placeMode(struct board* board){
 
 
 int main(){
-    
     struct board* board = makeBoard();
-
     int input = -1;
 
     do{
@@ -1655,26 +1744,33 @@ int main(){
         int result = -1;
         do{
             printf("Input:\n");
-            printf("    1: For interactive mode\n");
+            printf("    1: Interactive mode\n");
             printf("    2: Place mode\n");
-            printf("    3: Quit\n");
+            printf("    3: String mode\n");
+            printf("    4: Quit\n");
             printf(": ");
 
             result = scanf("%d", &input);
         }while((result == -1) ||
             (input < 1) ||
-            (input > 3));
+            (input > 4));
+
 
         switch(input){
             case 1:
                 interactiveMode(board);
+                break;
             case 2:
                 placeMode(board);
+                break;
+            case 3: 
+                stringMode(board);
+                break;
         }
 
 
         resetBoard(board);
-    } while(input != 3);
+    } while(input != 4);
     
 
     
